@@ -1,0 +1,2 @@
+# compmus
+Computational Musicology
