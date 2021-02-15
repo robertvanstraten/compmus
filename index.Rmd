@@ -203,7 +203,8 @@ labs(
   x = "Category",
   size = "Beats per minute"
 ) +
-theme_minimal() + theme(plot.title = element_text(hjust = 0.5))
+theme_minimal() +
+theme(plot.title = element_text(hjust = 0.5)) 
 ```
 
 Those remixes are really quite different! But which remixes do barely change in energy?
@@ -214,4 +215,4 @@ least_different <- tracks %>% filter(category=="Remixes") %>% top_n(-10, energy_
 knitr::kable(least_different[,c("track.name","energy","energy_diff", "duration_diff")], caption = "Top 10 remixes with least change in energy, with duration change", floating.environment="sidewaystable", col.names = c("Remix", "Energy", "Change in energy from original", "Change in duration (seconds)"))
 ```
 
-The top 10 least changed remixes in terms of Spotify determined energy include several extended versions of songs (Circus, Flame, Better When You're Gone, Don't Start Now and Toxic), it makes sense that an extended version of a song is not drastically different from the original.
+The top 10 least changed remixes in terms of Spotify determined energy include several extended versions of songs (Circus, Flames, Better When You're Gone, Don't Start Now, and Toxic), it makes sense that an extended version of a song is not drastically different from the original.
