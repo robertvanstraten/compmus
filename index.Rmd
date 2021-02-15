@@ -189,8 +189,8 @@ geom_line(aes(group=id),alpha=0.5) +
 geom_text_repel(aes(label=track.name, color=category), size=3, vjust="top", hjust="right") +
 scale_color_manual(values = c("Remixes" = "black", "Original recordings" = "transparent"), guide = FALSE) +
 scale_y_continuous(         # Fine-tune the y axis in the same way.
-  limits = c(0.3, 1),
-  breaks = c(0, 0.50, 1),
+  limits = c(0.33, 1),
+  breaks = c(0.33, 0.66, 1),
   minor_breaks = NULL
 ) +
 scale_x_discrete(expand=c(0.1,0),
