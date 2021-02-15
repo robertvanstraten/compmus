@@ -62,7 +62,7 @@ tracks <-
 
 ### Plot 1 - Tempo
 
-Tracks are remixed for a wide amount of reasons, but one of them is for them to be played in a night club. This means there is probably some change in tempo. 
+Tracks are remixed for a large amount of reasons, but one of the reasons is: the dancefloor. This means there is probably some change in tempo. 
 
 ```{r plot1}
 tracks %>%
