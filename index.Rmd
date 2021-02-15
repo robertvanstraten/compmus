@@ -5,6 +5,8 @@ date: "10/02/2021"
 output: html_document
 ---
 
+### Corpus description
+
 The corpus I chose for my Computational Musicology portfolio is a selection of remixes of (pop) songs that I like.
 I've been maintaining a Spotify playlist, that now has around 75 remixed recordings, since last year. I started maintaining this playlist for myself because there are generally a lot of remixes for artists that I follow, but I was unfamiliar with most. Listening to a lot of remixes and collecting those that I like was an interesting musical journey.
 
@@ -15,14 +17,201 @@ The definition of a remix is sometimes confusing, but the ones on my playlist ar
 The corpus is a personal playlist, artists on the playlist include Lady Gaga, Dua Lipa and Charli XCX, among others. Most of my music consumption takes place on Spotify, sometimes I watch a music video or performance on YouTube, or listen to one of the 40 albums I have collected on vinyl.
 Since the corpus is my personal playlist, it doesn't fully cover the pop remixes genre, and there aren't that many remixes of top 10 hits included.
 
-### Typical tracks:
+**Typical tracks**:
+
 1. Katy Perry - Chained To The Rhythm (Oliver Heldens Remix)
     * This is quite a typical pop remix, as there are lots on Spotify. Producers like Oliver Heldens, R3HAB and more just love to put these out. This is the type of remix that does no harm, but also doesn't bring a lot (different) to the table.
 2. Lady Gaga & Ariana Grande - Rain On Me (Purple Disco Machine Remix)
     * This is basically an extended version of the original, but the beat is a bit more house. There are more extended versions/remixes of tracks on this playlist, so it's quite typical.
 
-### Atypical tracks:
+**Atypical tracks**:
+
 1. Lady Gaga - Stupid Love (BloodPop® & BURNS Vitaclub Warehouse Remix)
     * This is almost an entirely different song from the original. It's a lot more techno-adjacent and the structure is completely different.
 2. Kesha - Praying (Frank Walker Remix)
     * This turns an acclaimed ballad into a dancefloor banger, with a good drop and build-ups. It may sound typical, but it feels so different and flips across genres.
+    
+---
+    
+    
+```{r libraries}
+library(spotifyr)
+library(tidyverse)
+require("ggrepel")
+library(expss)
+```
+
+
+```{r playlist information}
+originals <- get_playlist_audio_features("", "67znZtLJIfAIdEOgxnRgCL")
+originals <- originals[-c(10,66,68,71),] # remove duplicates of duplicates due to some Spotify API bug
+row.names(originals) <- NULL # reassign row-numbers
+remixes <- get_playlist_audio_features("", "0f4kAOBTCO8aEh1nrITYQL")
+
+originals <- originals %>% mutate(id = row_number())
+remixes <- remixes %>% mutate(id = row_number())
+```
+
+```{r combine}
+tracks <-
+  bind_rows(
+    originals %>% mutate(category = "Original recordings"),
+    remixes %>% mutate(category = "Remixes")
+  )
+```
+
+### Plot 1 - Tempo
+
+Tracks are remixed for a wide amount of reasons, but one of them is for them to be played in a night club. This means there is probably some change in tempo. 
+
+```{r plot1}
+tracks %>%
+  ggplot(aes(x= category, y = tempo)) +
+  geom_violin(fill="skyblue") +
+  geom_text(                  # Add outlier labels
+    aes(
+      y = tempo,
+      label = label
+    ),
+    data = 
+      tibble(
+        label = c("Slow Down", "Need Ur Luv -\nJapanese Wallpaper Remix"),
+        category = c("Original recordings", "Remixes"),
+        tempo = c(203.579,215.997)
+      ),
+    colour = "black",         # Override colour.
+    size = 3,                 # Override size.
+    hjust = "left",           # Align left side of label with the point.
+    vjust = "middle",         # Align middle of label with the point.
+    nudge_x = 0.05,          # Nudge the label slightly right.
+    nudge_y = 0            # Nudge the label slightly down.
+  ) +
+  scale_y_continuous(breaks=seq(80,220,by=20)) +
+  labs(
+    title = "Distribution of tempo in original and remixed recordings",
+    y = "Beats per minute",
+    x = element_blank()
+  ) +
+  theme_minimal() + theme(plot.title = element_text(hjust = 0.5), legend.position = "none")
+```
+
+As can be seen in the violin plot, for original recordings, the tempo for most tracks lies between 100-140 bpm, with a peak around 120 bpm. The tempo for the remixed tracks are for more dense, with a peak just slightly higher than 120 bpm.
+
+### Plot 2 - Club vibes
+
+Since the difference in tempo was obvious, let's take a look at two additional metrics from the Spotify API, *energy* and *danceability*.
+
+```{r plot 2}
+ggplot(tracks, aes(x=energy,y=danceability,size=tempo)) +
+geom_point(alpha=0.3, color="deepskyblue") +
+facet_wrap(~category) +
+scale_x_continuous(         # Fine-tune the x axis.
+  limits = c(0, 1),
+  breaks = c(0, 0.50, 1),   # Use grid-lines for quadrants only.
+  minor_breaks = NULL       # Remove 'minor' grid-lines.
+) +
+geom_text(                  # Add text labels from above.
+  aes(
+    x = energy,
+    y = danceability,
+    label = label
+  ),
+  data = 
+    tibble(
+      label = c("Scheiße", "Need Ur Luv -\nJP Wallpaper Remix"),
+      category = c("Original recordings", "Remixes"),
+      danceability = c(0.720, 0.301),
+      energy = c(0.970, 0.465)
+    ),
+  colour = "black",         # Override colour (not mode here).
+  size = 3,                 # Override size (not loudness here).
+  hjust = "right",           # Align left side of label with the point.
+  vjust = "middle",         # Align bottom of label with the point.
+  nudge_x = -0.05,          # Nudge the label slightly left.
+  nudge_y = 0.02            # Nudge the label slightly up.
+) +
+scale_y_continuous(         # Fine-tune the y axis in the same way.
+  limits = c(0, 1),
+  breaks = c(0, 0.50, 1),
+  minor_breaks = NULL
+) +
+labs(
+  title = "Energy, danceability and tempo per category",
+  y = "Danceability",
+  x = "Energy",
+  size = "Beats per minute"
+) +
+theme_minimal() + theme(plot.title = element_text(hjust = 0.5))
+```
+
+Seems like some remixes from my playlist make the original songs *less* danceable. It's also fairly visible that most original recorings were already quite high in both energy and danceability, with almost all tracks being in the upper right quadrant. In general, the remixes do seem to have more energy. That doesn't always make them more danceable, since quite a few more remixes are below 0.5 in danceability. Most less-danceable tracks seem to have a bpm higher than 120.
+
+### Plot 3 - What changed?
+
+It looks like energy can be quite different in remixes, so let's look at the top 10 remixes that changed up the energy a lot.
+
+```{r calculate energy differences}
+absdiff <- function(x) abs(diff(c(x, 0)[1:2]))
+
+energy_absdifference <- full_join(originals, tracks) %>%
+   group_by(id) %>%
+   summarise_at(c("energy"),~if(n() > 1) absdiff(.) else .)
+
+energy_absdifference <- energy_absdifference %>%
+  rename(energy_absdiff=energy)
+
+energy_difference <- full_join(originals, tracks) %>%
+   group_by(id) %>%
+   summarise_at(c("energy"),~if(n() > 1) diff(.) else .)
+
+energy_difference <- energy_difference %>%
+  rename(energy_diff=energy)
+
+duration_difference <- full_join(originals, tracks) %>%
+   group_by(id) %>%
+   summarise_at(c("track.duration_ms"),~if(n() > 1) diff(.)/1000 else .)
+
+duration_difference <- duration_difference %>%
+  rename(duration_diff = track.duration_ms)
+
+tracks <- merge(tracks, energy_absdifference, by="id")
+tracks <- merge(tracks, energy_difference, by="id")
+tracks <- merge(tracks, duration_difference, by="id")
+
+
+```
+
+```{r}
+most_different <- tracks %>% top_n(20, energy_absdiff) # get 10 biggest differences (remix and original have same difference value)
+ggplot(most_different, aes(x=category,y=energy)) + 
+geom_point(aes(size=tempo), alpha=0.3, color="deepskyblue") +
+geom_line(aes(group=id),alpha=0.5) +
+geom_text_repel(aes(label=track.name, color=category), size=3, vjust="top", hjust="right") +
+scale_color_manual(values = c("Remixes" = "black", "Original recordings" = "transparent"), guide = FALSE) +
+scale_y_continuous(         # Fine-tune the y axis in the same way.
+  limits = c(0.3, 1),
+  breaks = c(0, 0.50, 1),
+  minor_breaks = NULL
+) +
+scale_x_discrete(expand=c(0.1,0),
+                   breaks=c("Original recordings", "Remixes"),
+                   labels=c("Original recordings", "Remixes"),
+                   limits=c("Original recordings", "Remixes","c","d"), drop=FALSE) + # adjust x scale for song titles
+labs(
+  title = "Top 10 remixes with biggest change in energy, with tempo",
+  y = "Energy",
+  x = "Category",
+  size = "Beats per minute"
+) +
+theme_minimal() + theme(plot.title = element_text(hjust = 0.5))
+```
+
+Those remixes are really quite different! But which remixes do barely change in energy?
+
+```{r}
+least_different <- tracks %>% filter(category=="Remixes") %>% top_n(-10, energy_absdiff) %>% arrange(energy_absdiff)
+
+knitr::kable(least_different[,c("track.name","energy","energy_diff", "duration_diff")], caption = "Top 10 remixes with least change in energy, with duration change", floating.environment="sidewaystable", col.names = c("Remix", "Energy", "Change in energy from original", "Change in duration (seconds)"))
+```
+
+The top 10 least changed remixes in terms of Spotify determined energy include several extended versions of songs (Circus, Flame, Better When You're Gone, Don't Start Now and Toxic), it makes sense that an extended version of a song is not drastically different from the original.
