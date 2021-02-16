@@ -34,7 +34,7 @@ Since the corpus is my personal playlist, it doesn't fully cover the pop remixes
 ---
     
     
-```{r libraries}
+```{r libraries, echo=FALSE, results='hide',message=FALSE}
 library(spotifyr)
 library(tidyverse)
 require("ggrepel")
@@ -42,7 +42,7 @@ library(expss)
 ```
 
 
-```{r playlist information}
+```{r playlist information, echo=FALSE, results='hide',message=FALSE}
 originals <- get_playlist_audio_features("", "67znZtLJIfAIdEOgxnRgCL")
 originals <- originals[-c(10,66,68,71),] # remove duplicates of duplicates due to some Spotify API bug
 row.names(originals) <- NULL # reassign row-numbers
@@ -52,7 +52,7 @@ originals <- originals %>% mutate(id = row_number())
 remixes <- remixes %>% mutate(id = row_number())
 ```
 
-```{r combine}
+```{r combine, echo=FALSE, results='hide',message=FALSE}
 tracks <-
   bind_rows(
     originals %>% mutate(category = "Original recordings"),
@@ -64,7 +64,7 @@ tracks <-
 
 Tracks are remixed for a large amount of reasons, an important one being: the dancefloor. This means there is probably some change in tempo. 
 
-```{r plot1}
+```{r plot1, echo=FALSE, results='hide',message=FALSE}
 tracks %>%
   ggplot(aes(x= category, y = tempo)) +
   geom_violin(fill="skyblue") +
@@ -101,7 +101,7 @@ As can be seen in the violin plot, for original recordings, the tempo for most t
 
 Since the difference in tempo was obvious, let's take a look at two additional metrics from the Spotify API, *energy* and *danceability*.
 
-```{r plot 2}
+```{r plot 2, echo=FALSE, results='hide',message=FALSE}
 ggplot(tracks, aes(x=energy,y=danceability,size=tempo)) +
 geom_point(alpha=0.3, color="deepskyblue") +
 facet_wrap(~category) +
@@ -150,7 +150,7 @@ Seems like some remixes from my playlist make the original songs *less* danceabl
 
 It looks like energy can be quite different in remixes, so let's look at the top 10 remixes that changed up the energy a lot.
 
-```{r calculate energy differences}
+```{r calculate energy differences, echo=FALSE, results='hide',message=FALSE}
 absdiff <- function(x) abs(diff(c(x, 0)[1:2]))
 
 energy_absdifference <- full_join(originals, tracks) %>%
@@ -181,7 +181,7 @@ tracks <- merge(tracks, duration_difference, by="id")
 
 ```
 
-```{r plot 3 differences}
+```{r plot 3 differences, echo=FALSE, results='hide',message=FALSE}
 most_different <- tracks %>% top_n(20, energy_absdiff) # get 10 biggest differences (remix and original have same difference value)
 ggplot(most_different, aes(x=category,y=energy)) + 
 geom_point(aes(size=tempo), alpha=0.3, color="deepskyblue") +
@@ -209,7 +209,7 @@ theme(plot.title = element_text(hjust = 0.5))
 
 Those remixes are really quite different! But which remixes do barely change in energy?
 
-```{r table least different}
+```{r table least different, echo=FALSE}
 least_different <- tracks %>% filter(category=="Remixes") %>% top_n(-10, energy_absdiff) %>% arrange(energy_absdiff)
 
 knitr::kable(least_different[,c("track.name","energy","energy_diff", "duration_diff")], caption = "Top 10 remixes with least change in energy, with duration change", floating.environment="sidewaystable", col.names = c("Remix", "Energy", "Change in energy from original", "Change in duration (seconds)"))
