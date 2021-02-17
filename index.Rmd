@@ -2,7 +2,10 @@
 title: "Portfolio"
 author: "Robert van Straten"
 date: "10/02/2021"
-output: html_document
+output: 
+  flexdashboard::flex_dashboard:
+    storyboard: true
+    theme: flatly
 ---
 
 ### Corpus description
@@ -62,7 +65,6 @@ tracks <-
 
 ### Plot 1 - Tempo
 
-Tracks are remixed for a large amount of reasons, an important one being: the dancefloor. This means there is probably some change in tempo. 
 
 ```{r plot1, echo=FALSE, results='hide',message=FALSE}
 tracks %>%
@@ -95,11 +97,13 @@ tracks %>%
   theme_minimal() + theme(plot.title = element_text(hjust = 0.5), legend.position = "none")
 ```
 
+***
+Tracks are remixed for a large amount of reasons, an important one being: the dancefloor. This means there is probably some change in tempo. 
+
 As can be seen in the violin plot, for original recordings, the tempo for most tracks lies between 100-140 bpm, with a peak around 120 bpm. The tempo for the remixed tracks are for more dense, with a peak just slightly higher than 120 bpm.
 
 ### Plot 2 - Club vibes
 
-Since the difference in tempo was obvious, let's take a look at two additional metrics from the Spotify API, *energy* and *danceability*.
 
 ```{r plot 2, echo=FALSE, results='hide',message=FALSE}
 ggplot(tracks, aes(x=energy,y=danceability,size=tempo)) +
@@ -144,11 +148,12 @@ labs(
 theme_minimal() + theme(plot.title = element_text(hjust = 0.5))
 ```
 
+***
+Since the difference in tempo was obvious, let's take a look at two additional metrics from the Spotify API, *energy* and *danceability*.
+
 Seems like some remixes from my playlist make the original songs *less* danceable. It's also fairly visible that most original recorings were already quite high in both energy and danceability, with almost all tracks being in the upper right quadrant. In general, the remixes do seem to have more energy. That doesn't always make them more danceable, since quite a few more remixes are below 0.5 in danceability. Most less-danceable tracks seem to have a bpm higher than 120.
 
 ### Plot 3 - What changed?
-
-It looks like energy can be quite different in remixes, so let's look at the top 10 remixes that changed up the energy a lot.
 
 ```{r calculate energy differences, echo=FALSE, results='hide',message=FALSE}
 absdiff <- function(x) abs(diff(c(x, 0)[1:2]))
@@ -183,8 +188,8 @@ tracks <- merge(tracks, duration_difference, by="id")
 
 ```{r plot 3 differences, echo=FALSE, results='hide',message=FALSE}
 most_different <- tracks %>% top_n(20, energy_absdiff) # get 10 biggest differences (remix and original have same difference value)
-ggplot(most_different, aes(x=category,y=energy)) + 
-geom_point(aes(size=tempo), alpha=0.3, color="deepskyblue") +
+ggplot(most_different, aes(x=category,y=energy,fill=as.factor(id))) + 
+geom_point(aes(size=tempo), alpha=0.3, shape=21) +
 geom_line(aes(group=id),alpha=0.5) +
 geom_text_repel(aes(label=track.name, color=category), size=3, vjust="top", hjust="right") +
 scale_color_manual(values = c("Remixes" = "black", "Original recordings" = "transparent"), guide = FALSE) +
@@ -203,9 +208,13 @@ labs(
   x = "Category",
   size = "Beats per minute"
 ) +
+guides(fill=FALSE) +
 theme_minimal() +
 theme(plot.title = element_text(hjust = 0.5)) 
 ```
+
+***
+It looks like energy can be quite different in remixes, so let's look at the top 10 remixes that changed up the energy a lot.
 
 Those remixes are really quite different! But which remixes do barely change in energy?
 
