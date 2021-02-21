@@ -79,7 +79,7 @@ tracks %>%
     ),
     data = 
       tibble(
-        label = c("Slow Down", "Need Ur Luv -\nJapanese Wallpaper Remix"),
+        label = c("Slow Down", "Need Ur Luv -\nJapanese Wallpaper\nRemix"),
         category = c("Original recordings", "Remixes"),
         tempo = c(203.579,215.997)
       ),
@@ -88,7 +88,7 @@ tracks %>%
     hjust = "left",           # Align left side of label with the point.
     vjust = "middle",         # Align middle of label with the point.
     nudge_x = 0.05,          # Nudge the label slightly right.
-    nudge_y = 0            # Nudge the label slightly down.
+    nudge_y = -1            # Nudge the label slightly down.
   ) +
   scale_y_continuous(breaks=seq(80,220,by=20)) +
   labs(
@@ -218,7 +218,7 @@ The top 10 least changed remixes in terms of Spotify determined energy include s
 
 ### Week 2
 
-```{r}
+```{r chromagram}
 remix <-
   get_tidy_audio_analysis("3W2ZcrRsInZbjWylOi6KhZ") %>%
   select(segments) %>%
