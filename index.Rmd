@@ -256,19 +256,19 @@ remix %>%
         "Interlude",
         "Verse",
         "Build-up starts",
-        "Drop 2",
+        "Drop",
         "Interlude",
         "String outro"
       ),
   ) +
   theme_minimal() + 
-  theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 90, hjust=1))
+  theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 45, hjust=1))
 ```
 
 ***
 Flume's remix of Disclosure's "You & Me" (featuring Eliza Doolittle) had the biggest change in energy in the corpus compared to its original recording. It's also way more popular than the original. As of writing, the remix has 391 million Spotify streams, while the original has 19 million.
 
-A chromagram shows how the pitch content is distributed between pitch classes (chroma's) over time, this way harmonic and melodic characteristics can be captured and visualized. This one uses a Euclidean norm for the chroma vectors. Certain song structure elements are annotated on the x-axis.
+A chromagram shows how the pitch content is distributed between pitch classes (chroma's) over time, this way harmonic and melodic characteristics can be captured and visualized. This one uses a Euclidean norm for the chroma vectors. Certain song elements are annotated on the x-axis, an element that is very apparent in the the chromagram are the two long *drop*s in the song. 
 
 
 <style>
