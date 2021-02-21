@@ -1,23 +1,22 @@
 ---
-title: "Portfolio"
+title: "Computational Musicology Portfolio"
 author: "Robert van Straten"
-date: "10/02/2021"
+date: "Last updated: 21/02/2021"
 output: 
   flexdashboard::flex_dashboard:
     storyboard: true
     theme: flatly
 ---
 
-### Corpus description
+### Introduction - It's the remix!
 
 The corpus I chose for my Computational Musicology portfolio is a selection of remixes of (pop) songs that I like.
-I've been maintaining a Spotify playlist, that now has around 75 remixed recordings, since last year. I started maintaining this playlist for myself because there are generally a lot of remixes for artists that I follow, but I was unfamiliar with most. Listening to a lot of remixes and collecting those that I like was an interesting musical journey.
+I've been maintaining a Spotify playlist, that now has around 75 remixed recordings, since last year. I started maintaining this playlist for myself because there are generally a lot of remixes for artists that I follow, but I was unfamiliar with most. They're quite an underappreciated part of an artist's discography. Listening to a lot of remixes and collecting those that I like was an interesting musical journey.
 
 It'd be interesting to find out if there's some general elements shared among the remixed recordings that I like. Comparing the remixes to the original recordings can also be interesting, for sure the tempo would probably be higher for the remixes.
-The definition of a remix is sometimes confusing, but the ones on my playlist are either extended remixes by the original artists or a remix where a significant amount of production on the song has been altered from the original. Remixes where the only difference is a new guest artists are not included on the playlist.
+The definition of a remix is sometimes confusing, but the ones on my playlist are either extended remixes by the original artists or a remix where a significant amount of production on the song has been altered from the original. Remixes where the only difference is a new guest artists are **not** included on the playlist.
 
-
-The corpus is a personal playlist, artists on the playlist include Lady Gaga, Dua Lipa and Charli XCX, among others. Most of my music consumption takes place on Spotify, sometimes I watch a music video or performance on YouTube, or listen to one of the 40 albums I have collected on vinyl.
+The corpus is a personal playlist, artists on the playlist include Lady Gaga, Dua Lipa and Charli XCX, among others.
 Since the corpus is my personal playlist, it doesn't fully cover the pop remixes genre, and there aren't that many remixes of top 10 hits included.
 
 **Typical tracks**:
@@ -66,7 +65,7 @@ tracks <-
   )
 ```
 
-### Plot 1 - Tempo
+### How remixes switch up the tempo.
 
 ```{r plot1}
 tracks %>%
@@ -100,14 +99,19 @@ tracks %>%
 ```
 
 ***
-Tracks are remixed for a large amount of reasons, an important one being: the dancefloor. This means there is probably some change in tempo. 
+Tracks are remixed for a large amount of reasons, an important one being: making a song more suitable for the dancefloor. This means there is probably some change in tempo. 
 
-As can be seen in the violin plot, for original recordings, the tempo for most tracks lies between 100-140 bpm, with a peak around 120 bpm. The tempo for the remixed tracks are for more dense, with a peak just slightly higher than 120 bpm.
+In the violin plot, which shows the full tempo distribution for both categories, it can be seen that for original recordings, the tempo for most tracks lies between 100-140 bpm, with a peak around 120 bpm. The tempo distribution for their remixed counterparts is far more dense, with a peak just slightly above 120 bpm. Most house music, and thus, remixes that fall into that genre, is around 128 bpm nowadays, which can be significant factor in the overall tempo change.
 
-### Plot 2 - Club vibes
+Tempo alone doesn't define how club-ready a track is, two other important factors are *energy* and *danceability*.
+
+### Energy and danceability; are "my" remixes more club-ready?
 
 
 ```{r plot 2}
+means <- tracks %>% group_by(category) %>% summarise(energy = mean(energy), danceability = mean(danceability))
+
+
 d <- highlight_key(tracks, ~id)
 
 plot2 <- ggplot(d, aes(x=energy,y=danceability,size=tempo,color=remix_name,label=track.name)) +
@@ -140,11 +144,14 @@ highlight( ggplot2, on = "plotly_hover", off = "plotly_doubleclick")
 ```
 
 ***
-Since the difference in tempo was obvious, let's take a look at two additional metrics from the Spotify API, *energy* and *danceability*.
 
-Seems like some remixes from my playlist make the original songs *less* danceable. It's also fairly visible that most original recorings were already quite high in both energy and danceability, with almost all tracks being in the upper right quadrant. In general, the remixes do seem to have more energy. That doesn't always make them more danceable, since quite a few more remixes are below 0.5 in danceability. Most less-danceable tracks seem to have a bpm higher than 120.
+This graphic shows the [Spotify API](https://developer.spotify.com/documentation/web-api/reference/#object-audiofeaturesobject)-determined energy and danceability for all tracks in the corpus. Most original recordings in the corpus were already quite high in both energy and danceability, with almost all tracks being in the upper right quadrant.
 
-### Plot 3 - What changed?
+Overall, energy and danceability are somewhat higher among the remixes. Their energy is distributed within the same range as the original, but a shift to the right is apparant. The danceability is not distributed within the same range, there are a more tracks with less than 0.5 danceability, most of those having higher energy.
+
+When hovering over a point in the graphic, the exact values and song title are shown. The track's counterpart in the other category gets highlighted as well, highlights can be made undone by doubleclicking on whitespace in the graphic.
+
+### Different mix and different energy.
 
 ```{r calculate energy differences}
 absdiff <- function(x) abs(diff(c(x, 0)[1:2]))
@@ -193,6 +200,7 @@ labs(
   x = "Energy (from original to remix)",
   size = "Beats per minute"
 ) +
+  
 theme_minimal() +
 theme(plot.title = element_text(hjust = 0.5)) + 
 scale_y_discrete(labels = function(x) str_wrap(str_replace_all(x, "foo" , " "),
@@ -201,22 +209,21 @@ coord_cartesian(xlim = c(0, 1))
 ```
 
 ***
-It looks like energy can be quite different in remixes, so let's look at the top 10 remixes that changed up the energy a lot.
 
-### Least changed remixes
+Energy is an important factor, and listening to the remixes with a lot of change in the assigned energy value confirmed that. Seems that in most cases, remix with a (big) change in energy are actually very different songs.
+
+So, what about the remixes with the smallest change in energy?
+
 
 ```{r table least different, echo=FALSE}
 least_different <- tracks %>% filter(category=="Remixes") %>% top_n(-10, energy_absdiff) %>% arrange(energy_absdiff)
 
 kable(least_different[,c("track.name","energy","energy_diff", "duration_diff")], caption = "Top 10 remixes with least change in energy, with duration change", floating.environment="sidewaystable", col.names = c("Remix", "Energy", "Change in energy from original", "Change in duration (seconds)"))
 ```
-***
 
-Those remixes are really quite different! But which remixes do barely change in energy?
+These remixes don't feel that different from the original. Half of the songs on this list are mostly remixed that are just extended versions of the original song, namely Circus, Flames, Better When You're Gone, Don't Start Now, and Toxic. It makes sense that an extended version of a song is not drastically different from the original. Also interesting is that Mura Masa has a track in both the top 10 biggest and top 10 smallest changes in energy.
 
-The top 10 least changed remixes in terms of Spotify determined energy include several extended versions of songs (Circus, Flames, Better When You're Gone, Don't Start Now, and Toxic), it makes sense that an extended version of a song is not drastically different from the original.
-
-### Week 2
+### Structure of a remix through a chromagram.
 
 ```{r chromagram}
 remix <-
@@ -237,12 +244,37 @@ remix %>%
     )
   ) +
   geom_tile() +
-  labs(title = "Chromagram for Disclosure - You & Me (Flume Remix)", x = "Time (s)", y = NULL, fill = "Magnitude") +
+  labs(title = "Chromagram for Disclosure - You & Me (Flume Remix)", x = "Time", y = NULL, fill = "Magnitude") +
   scale_fill_viridis_c() +
-  scale_x_continuous(limits=c(0,284),breaks=seq(0,284,by=30)) +
+  scale_x_continuous(
+    breaks = c(12, 38, 64, 115, 140, 154, 166, 218, 244),
+    labels =
+      c(
+        "First vocal",
+        "Build-up starts",
+        "Drop",
+        "Interlude",
+        "Verse",
+        "Build-up starts",
+        "Drop 2",
+        "Interlude",
+        "String outro"
+      ),
+  ) +
   theme_minimal() + 
-  theme(plot.title = element_text(hjust = 0.5))
+  theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 90, hjust=1))
 ```
 
 ***
-Sidebar text
+Flume's remix of Disclosure's "You & Me" (featuring Eliza Doolittle) had the biggest change in energy in the corpus compared to its original recording. It's also way more popular than the original. As of writing, the remix has 391 million Spotify streams, while the original has 19 million.
+
+A chromagram shows how the pitch content is distributed between pitch classes (chroma's) over time, this way harmonic and melodic characteristics can be captured and visualized. This one uses a Euclidean norm for the chroma vectors. Certain song structure elements are annotated on the x-axis.
+
+
+<style>
+
+    .sbframe-commentary {
+    width: 350px;
+}
+
+</style>
