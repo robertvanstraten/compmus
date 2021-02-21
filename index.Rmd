@@ -110,8 +110,11 @@ As can be seen in the violin plot, for original recordings, the tempo for most t
 
 
 ```{r plot 2}
-plot2 <- ggplot(tracks, aes(x=energy,y=danceability,size=tempo,color=track.name)) +
+d <- highlight_key(tracks, ~id)
+
+plot2 <- ggplot(d, aes(x=energy,y=danceability,size=tempo,color=track.name)) +
 geom_point(alpha=0.5) +
+geom_rug(size = 0.1) +
 facet_wrap(~category) +
 scale_x_continuous(         # Fine-tune the x axis.
   limits = c(0, 1),
@@ -131,7 +134,11 @@ labs(
 ) +
 theme_minimal() + theme(legend.position = "none", plot.title = element_text(hjust = 0.5))
 
-ggplotly(plot2)
+ggplot2 <- ggplotly(plot2, tooltip = c("groups","track.name","energy","danceability","tempo") )
+
+highlight( ggplot2, on = "plotly_hover", off = "plotly_deselect")
+
+
 ```
 
 ***
@@ -186,8 +193,8 @@ geom_text(aes(x = energy,
 geom_point(aes(x=energy,y=remix_name,size=tempo), alpha=0.3, color="deepskyblue") +
 labs(
   title = "Top 10 remixes with biggest change in energy, with tempo",
-  y = "Remix",
-  x = "Energy (From original to remix)",
+  y = "",
+  x = "Energy (from original to remix)",
   size = "Beats per minute"
 ) +
 theme_minimal() +
@@ -212,3 +219,5 @@ kable(least_different[,c("track.name","energy","energy_diff", "duration_diff")],
 Those remixes are really quite different! But which remixes do barely change in energy?
 
 The top 10 least changed remixes in terms of Spotify determined energy include several extended versions of songs (Circus, Flames, Better When You're Gone, Don't Start Now, and Toxic), it makes sense that an extended version of a song is not drastically different from the original.
+
+### 
