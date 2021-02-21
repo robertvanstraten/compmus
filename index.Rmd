@@ -34,8 +34,6 @@ Since the corpus is my personal playlist, it doesn't fully cover the pop remixes
 2. Kesha - Praying (Frank Walker Remix)
     * This turns an acclaimed ballad into a dancefloor banger, with a good drop and build-ups. It may sound typical, but it feels so different and flips across genres.
     
----
-    
     
 ```{r libraries}
 library(spotifyr)
@@ -46,6 +44,7 @@ library(knitr)
 library(stringr)
 library(forcats)
 library(plotly)
+library(compmus)
 ```
 
 
@@ -68,7 +67,6 @@ tracks <-
 ```
 
 ### Plot 1 - Tempo
-
 
 ```{r plot1}
 tracks %>%
@@ -112,8 +110,8 @@ As can be seen in the violin plot, for original recordings, the tempo for most t
 ```{r plot 2}
 d <- highlight_key(tracks, ~id)
 
-plot2 <- ggplot(d, aes(x=energy,y=danceability,size=tempo,color=track.name)) +
-geom_point(alpha=0.5) +
+plot2 <- ggplot(d, aes(x=energy,y=danceability,size=tempo,color=remix_name,label=track.name)) +
+geom_point(alpha=0.7) +
 geom_rug(size = 0.1) +
 facet_wrap(~category) +
 scale_x_continuous(         # Fine-tune the x axis.
@@ -136,7 +134,7 @@ theme_minimal() + theme(legend.position = "none", plot.title = element_text(hjus
 
 ggplot2 <- ggplotly(plot2, tooltip = c("groups","track.name","energy","danceability","tempo") )
 
-highlight( ggplot2, on = "plotly_hover", off = "plotly_deselect")
+highlight( ggplot2, on = "plotly_hover", off = "plotly_doubleclick")
 
 
 ```
@@ -175,8 +173,6 @@ duration_difference <- duration_difference %>%
 tracks <- merge(tracks, energy_absdifference, by="id")
 tracks <- merge(tracks, energy_difference, by="id")
 tracks <- merge(tracks, duration_difference, by="id")
-
-
 ```
 
 ```{r plot 3 differences}
@@ -220,4 +216,33 @@ Those remixes are really quite different! But which remixes do barely change in 
 
 The top 10 least changed remixes in terms of Spotify determined energy include several extended versions of songs (Circus, Flames, Better When You're Gone, Don't Start Now, and Toxic), it makes sense that an extended version of a song is not drastically different from the original.
 
-### 
+### Week 2
+
+```{r}
+remix <-
+  get_tidy_audio_analysis("3W2ZcrRsInZbjWylOi6KhZ") %>%
+  select(segments) %>%
+  unnest(segments) %>%
+  select(start, duration, pitches)
+
+remix %>%
+  mutate(pitches = map(pitches, compmus_normalise, "euclidean")) %>%
+  compmus_gather_chroma() %>% 
+  ggplot(
+    aes(
+      x = start + duration / 2,
+      width = duration,
+      y = pitch_class,
+      fill = value
+    )
+  ) +
+  geom_tile() +
+  labs(title = "Chromagram for Disclosure - You & Me (Flume Remix)", x = "Time (s)", y = NULL, fill = "Magnitude") +
+  scale_fill_viridis_c() +
+  scale_x_continuous(limits=c(0,284),breaks=seq(0,284,by=30)) +
+  theme_minimal() + 
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+***
+Sidebar text
