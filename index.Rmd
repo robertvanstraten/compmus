@@ -134,7 +134,7 @@ theme_minimal() + theme(legend.position = "none", plot.title = element_text(hjus
 
 ggplot2 <- ggplotly(plot2, tooltip = c("groups","track.name","energy","danceability","tempo") )
 
-highlight( ggplot2, on = "plotly_hover", off = "plotly_doubleclick")
+highlight( ggplot2, on = "plotly_hover", off = "plotly_deselect")
 
 
 ```
