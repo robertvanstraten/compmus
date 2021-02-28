@@ -1,14 +1,183 @@
 ---
 title: "Computational Musicology Portfolio"
 author: "Robert van Straten"
-date: "Last updated: 21/02/2021"
+date: "Last updated: 28/02/2021"
 output: 
   flexdashboard::flex_dashboard:
     storyboard: true
     theme: flatly
 ---
 
-### Introduction - It's the remix!
+```{r libraries}
+library(spotifyr)
+library(tidyverse)
+library(expss)
+library(knitr)
+library(stringr)
+library(forcats)
+library(plotly)
+library(compmus)
+library(gridExtra)
+library(cowplot)
+```
+
+
+```{r playlist information}
+originals <- get_playlist_audio_features("", "67znZtLJIfAIdEOgxnRgCL")
+originals <- originals[-c(10,66,68,71),] # remove duplicates of duplicates due to some Spotify API bug
+row.names(originals) <- NULL # reassign row-numbers
+remixes <- get_playlist_audio_features("", "0f4kAOBTCO8aEh1nrITYQL")
+
+remixes <- remixes %>% mutate(id = row_number(), remix_name = track.name)
+originals <- originals %>% mutate(id = row_number(), remix_name = remixes$remix_name)
+```
+
+```{r combine}
+tracks <-
+  bind_rows(
+    originals %>% mutate(category = "Original recordings"),
+    remixes %>% mutate(category = "Remixes")
+  )
+```
+
+### _Gonna be you, and me / It's gonna be everything_, restructured by Flume
+
+```{r ssm info}
+
+original <-
+  get_tidy_audio_analysis("55jxzrIhEupVy1l6RDJaO5") %>% # Change URI.
+  compmus_align(bars, segments) %>%                     # Change `bars`
+  select(bars) %>%                                      #   in all three
+  unnest(bars) %>%                                      #   of these lines.
+  mutate(
+    pitches =
+      map(segments,
+        compmus_summarise, pitches,
+        method = "mean", norm = "manhattan"              # Change summary & norm.
+      )
+  ) %>%
+  mutate(
+    timbre =
+      map(segments,
+        compmus_summarise, timbre,
+        method = "mean"              # Change summary & norm.
+      )
+  )
+
+remix <-
+  get_tidy_audio_analysis("3W2ZcrRsInZbjWylOi6KhZ") %>% # Change URI.
+  compmus_align(bars, segments) %>%                     # Change `bars`
+  select(bars) %>%                                      #   in all three
+  unnest(bars) %>%                                      #   of these lines.
+  mutate(
+    pitches =
+      map(segments,
+        compmus_summarise, pitches,
+        method = "rms", norm = "euclidean"              # Change summary & norm.
+      )
+  ) %>%
+  mutate(
+    timbre =
+      map(segments,
+        compmus_summarise, timbre,
+        method = "rms", norm = "euclidean"              # Change summary & norm.
+      )
+  )
+```
+
+
+```{r ssm plots}
+op <- original %>%
+  compmus_self_similarity(pitches, "manhattan") %>% 
+  ggplot(
+    aes(
+      x = xstart + xduration / 2,
+      width = xduration,
+      y = ystart + yduration / 2,
+      height = yduration,
+      fill = d
+    )
+  ) +
+  geom_tile() +
+  coord_fixed() +
+  scale_x_continuous(breaks = seq(0, 266.424, by = 60)) +
+  scale_y_continuous(breaks = seq(0, 266.424, by = 60)) +
+  scale_fill_viridis_c(guide = "none") +
+  theme_classic() +
+  labs(x = "", y = "")
+
+ot <- original %>%
+  compmus_self_similarity(timbre, "euclidean") %>% 
+  ggplot(
+    aes(
+      x = xstart + xduration / 2,
+      width = xduration,
+      y = ystart + yduration / 2,
+      height = yduration,
+      fill = d
+    )
+  ) +
+  geom_tile() +
+  coord_fixed() +
+  scale_x_continuous(breaks = seq(0, 266.424, by = 60)) +
+  scale_y_continuous(breaks = seq(0, 266.424, by = 60)) +
+  scale_fill_viridis_c(guide = "none") +
+  theme_classic() +
+  labs(x = "", y = "")
+
+
+rp <- remix %>%
+  compmus_self_similarity(pitches, "cosine") %>% 
+  ggplot(
+    aes(
+      x = xstart + xduration / 2,
+      width = xduration,
+      y = ystart + yduration / 2,
+      height = yduration,
+      fill = d
+    )
+  ) +
+  geom_tile() +
+  coord_fixed() +
+  scale_x_continuous(breaks = seq(0, 282.581, by = 60)) +
+  scale_y_continuous(breaks = seq(0, 282.812, by = 60)) +
+  scale_fill_viridis_c(guide = "none") +
+  theme_classic() +
+  labs(x = "", y = "")
+
+rt <- remix %>%
+  compmus_self_similarity(timbre, "cosine") %>% 
+  ggplot(
+    aes(
+      x = xstart + xduration / 2,
+      width = xduration,
+      y = ystart + yduration / 2,
+      height = yduration,
+      fill = d
+    )
+  ) +
+  geom_tile() +
+  coord_fixed() +
+  scale_x_continuous(breaks = seq(0, 282.812, by = 60)) +
+  scale_y_continuous(breaks = seq(0, 282.812, by = 60)) +
+  scale_fill_viridis_c(guide = "none") +
+  theme_classic() +
+  labs(x = "", y = "")
+```
+
+```{r ssm grid}
+grid.arrange (arrangeGrob(op, top=grid::textGrob("You & Me", hjust = 0.15), left="Chroma"),arrangeGrob(rp,top=grid::textGrob("Flume Remix", hjust = 0.21)),arrangeGrob(ot, left="Timbre"),rt,ncol=2, nrow=2, widths = c(2.2,2) ,heights = c(2.2,2), top=grid::textGrob("Self-similarity matrices, segmented by bars, with axes in seconds", hjust= 0.42))
+
+```
+
+***
+Flume's remix of Disclosure's "You & Me" (featuring Eliza Doolittle) had the biggest change in energy in the corpus compared to its original recording. It's also way more popular than the original. As of writing, the remix has 392 million Spotify streams, while the original has 19 million.
+
+In the original recording, both self-similarity matrices show horizontal and vertical lines for novelty just before the chorus, where the song strips some elements. The timbre-based matrix shows a lot of blocks, which is a coherent part of the song. The chroma (pitch classes)-based matrix most clearly shows the different parts of the song. Besides the novelty lines, the part just before the line and after the line is parallel to its repetition later in the song. The difference between the first chorus and the second verse is visible as well, because it stands out as a block.
+
+The Flume remix is not only different in energy, there's a completely different structure as well. The verses are completely gone, and only a part of the chorus (and the part just before) is used, a newcomer is the two *drop*s the song now has. The chroma-based matrix shows a lot of parallel lines, which means there's a big similarity in a later part in the song. But mostly, this matrix shows there's similarity between the drop (the large dark blue squares) and non-drop parts. The timbre-based matrix more clearly shows the (mostly just musical) parts after the drops, and the verses before the the drop are somewhat visible, due to the actual drop parts being darker.
+
+### Introduction - Another take: It's the remix!
 
 The corpus I chose for my Computational Musicology portfolio is a selection of remixes of (pop) songs that I like.
 I've been maintaining a Spotify playlist, that now has around 75 remixed recordings, since last year. I started maintaining this playlist for myself because there are generally a lot of remixes for artists that I follow, but I was unfamiliar with most. They're quite an underappreciated part of an artist's discography. Listening to a lot of remixes and collecting those that I like was an interesting musical journey.
@@ -32,40 +201,8 @@ Since the corpus is my personal playlist, it doesn't fully cover the pop remixes
     * This is almost an entirely different song from the original. It's a lot more techno-adjacent and the structure is completely different.
 2. Kesha - Praying (Frank Walker Remix)
     * This turns an acclaimed ballad into a dancefloor banger, with a good drop and build-ups. It may sound typical, but it feels so different and flips across genres.
-    
-    
-```{r libraries}
-library(spotifyr)
-library(tidyverse)
-require("ggrepel")
-library(expss)
-library(knitr)
-library(stringr)
-library(forcats)
-library(plotly)
-library(compmus)
-```
 
-
-```{r playlist information}
-originals <- get_playlist_audio_features("", "67znZtLJIfAIdEOgxnRgCL")
-originals <- originals[-c(10,66,68,71),] # remove duplicates of duplicates due to some Spotify API bug
-row.names(originals) <- NULL # reassign row-numbers
-remixes <- get_playlist_audio_features("", "0f4kAOBTCO8aEh1nrITYQL")
-
-remixes <- remixes %>% mutate(id = row_number(), remix_name = track.name)
-originals <- originals %>% mutate(id = row_number(), remix_name = remixes$remix_name)
-```
-
-```{r combine}
-tracks <-
-  bind_rows(
-    originals %>% mutate(category = "Original recordings"),
-    remixes %>% mutate(category = "Remixes")
-  )
-```
-
-### How remixes switch up the tempo.
+### A remix can change a lot of aspects of a song, an expected change is the **tempo**
 
 ```{r plot1}
 tracks %>%
@@ -105,18 +242,16 @@ In the violin plot, which shows the full tempo distribution for both categories,
 
 Tempo alone doesn't define how club-ready a track is, two other important factors are *energy* and *danceability*.
 
-### Energy and danceability; are "my" remixes more club-ready?
+### Spotify determines **energy** and **danceability** for every song; are "my remixes" more club-ready?
 
 
 ```{r plot 2}
-means <- tracks %>% group_by(category) %>% summarise(energy = mean(energy), danceability = mean(danceability))
-
 
 d <- highlight_key(tracks, ~id)
 
 plot2 <- ggplot(d, aes(x=energy,y=danceability,size=tempo,color=remix_name,label=track.name)) +
 geom_point(alpha=0.7) +
-geom_rug(size = 0.1) +
+# geom_rug(size = 0.1) +
 facet_wrap(~category) +
 scale_x_continuous(         # Fine-tune the x axis.
   limits = c(0, 1),
@@ -140,18 +275,18 @@ ggplot2 <- ggplotly(plot2, tooltip = c("groups","track.name","energy","danceabil
 
 ggplot2 <- ggplot2 %>% layout(dragmode='zoom')
 
-highlight( ggplot2, on = "plotly_hover", off = "plotly_doubleclick")
+partial_bundle(highlight( ggplot2, on = "plotly_hover", off = "plotly_doubleclick"))
 ```
 
 ***
 
 This graphic shows the [Spotify API](https://developer.spotify.com/documentation/web-api/reference/#object-audiofeaturesobject)-determined energy and danceability for all tracks in the corpus. Most original recordings in the corpus were already quite high in both energy and danceability, with almost all tracks being in the upper right quadrant.
 
-Overall, energy and danceability are somewhat higher among the remixes. Their energy is distributed within the same range as the original, but a shift to the right is apparant. The danceability is not distributed within the same range, there are a more tracks with less than 0.5 danceability, most of those having higher energy.
+Overall, energy and danceability are somewhat higher among the remixes. Their energy is distributed within the same range as the original, but a shift to the right is apparent. Danceability of the remixes is also distributed within the same range as the original tracks, but less concentrated and there are more tracks with less than 0.5 danceability, with most of those having higher energy than their original mixes.
 
-When hovering over a point in the graphic, the exact values and song title are shown. The track's counterpart in the other category gets highlighted as well, highlights can be made undone by doubleclicking on whitespace in the graphic.
+When hovering over a point in the graphic, the exact values and song title are shown. The track's counterpart in the other category gets highlighted as well, highlights can be made undone by double-clicking on any blank space in the graphic.
 
-### Different mix and different energy.
+### Big changes in **energy** point towards a remix being really "different" from the original recording
 
 ```{r calculate energy differences}
 absdiff <- function(x) abs(diff(c(x, 0)[1:2]))
@@ -191,7 +326,7 @@ geom_path(aes(x=energy,y=remix_name),
           arrow = arrow(length = unit(1.5, "mm"), type = "closed")) +
 geom_text(aes(x = energy,
               y = remix_name,
-              label = energy,
+              label = sprintf("%0.2f", round(energy, digits = 2)),
               vjust=1.5),size=3) +
 geom_point(aes(x=energy,y=remix_name,size=tempo), alpha=0.3, color="deepskyblue") +
 labs(
@@ -223,58 +358,11 @@ kable(least_different[,c("track.name","energy","energy_diff", "duration_diff")],
 
 These remixes don't feel that different from the original. Half of the songs on this list are mostly remixed that are just extended versions of the original song, namely Circus, Flames, Better When You're Gone, Don't Start Now, and Toxic. It makes sense that an extended version of a song is not drastically different from the original. Also interesting is that Mura Masa has a track in both the top 10 biggest and top 10 smallest changes in energy.
 
-### Structure of a remix through a chromagram.
-
-```{r chromagram}
-remix <-
-  get_tidy_audio_analysis("3W2ZcrRsInZbjWylOi6KhZ") %>%
-  select(segments) %>%
-  unnest(segments) %>%
-  select(start, duration, pitches)
-
-remix %>%
-  mutate(pitches = map(pitches, compmus_normalise, "euclidean")) %>%
-  compmus_gather_chroma() %>% 
-  ggplot(
-    aes(
-      x = start + duration / 2,
-      width = duration,
-      y = pitch_class,
-      fill = value
-    )
-  ) +
-  geom_tile() +
-  labs(title = "Chromagram for Disclosure - You & Me (Flume Remix)", x = "Time", y = NULL, fill = "Magnitude") +
-  scale_fill_viridis_c() +
-  scale_x_continuous(
-    breaks = c(12, 38, 64, 115, 140, 154, 166, 218, 244),
-    labels =
-      c(
-        "First vocal",
-        "Build-up starts",
-        "Drop",
-        "Interlude",
-        "Verse",
-        "Build-up starts",
-        "Drop",
-        "Interlude",
-        "String outro"
-      ),
-  ) +
-  theme_minimal() + 
-  theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 45, hjust=1))
-```
-
-***
-Flume's remix of Disclosure's "You & Me" (featuring Eliza Doolittle) had the biggest change in energy in the corpus compared to its original recording. It's also way more popular than the original. As of writing, the remix has 391 million Spotify streams, while the original has 19 million.
-
-A chromagram shows how the pitch content is distributed between pitch classes (chroma's) over time, this way harmonic and melodic characteristics can be captured and visualized. This one uses a Euclidean norm for the chroma vectors. Certain song elements are annotated on the x-axis, an element that is very apparent in the the chromagram are the two long *drop*s in the song. 
-
-
 <style>
 
     .sbframe-commentary {
-    width: 350px;
+    width: 20vw;
+    min-width: 350px;
 }
 
 </style>
