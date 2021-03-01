@@ -361,7 +361,7 @@ These remixes don't feel that different from the original. Half of the songs on 
 <style>
 
     .sbframe-commentary {
-    width: 20vw;
+    width: 21vw;
     min-width: 350px;
 }
 
