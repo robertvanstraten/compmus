@@ -1,7 +1,7 @@
 ---
 title: "Computational Musicology Portfolio"
 author: "Robert van Straten"
-date: "Last updated: 14/03/2021"
+date: "Last updated: 15/03/2021"
 output: 
   flexdashboard::flex_dashboard:
     storyboard: true
@@ -24,7 +24,7 @@ library(cowplot)
 
 ```{r playlist information}
 originals <- get_playlist_audio_features("", "67znZtLJIfAIdEOgxnRgCL")
-originals <- originals[-c(10,66,68,71),] # remove duplicates of duplicates due to some Spotify API bug
+originals <- originals[-c(10,66,68,71),] # remove duplicates of duplicates due to some Spotify API quirk
 row.names(originals) <- NULL # reassign row-numbers
 remixes <- get_playlist_audio_features("", "0f4kAOBTCO8aEh1nrITYQL")
 
@@ -40,8 +40,7 @@ tracks <-
   )
 ```
 
-
-### Tempo
+### The _need_ for a tempo, even when it's not _that_ accurate __NEW 15/3__
 
 ```{r needurluv}
 needurluv <- get_tidy_audio_analysis("1x96SvT97nQgfdgEkUiSv9")
@@ -75,9 +74,108 @@ grid.arrange(tempo1, tempo2, ncol=1)
 
 ***
 
-Jep
+In 2014, British pop artist Charli XCX released her sophomore album, _SUCKER_. The song "Need Ur Luv" features on the record, and has a similar vibe to BØRNS' song "Electric Love", which came out just a month before. Australian indie pop artist Japanese Wallpaper made a remix of "Need Ur Luv", which got an official release in 2018. 
 
-### Re-mix, re-distribution of pitch classes? **NEW 8-3**
+```{r}
+html_tag_audio <- function(file, type = c("mpeg")) {
+  type <- match.arg(type)
+  htmltools::tags$audio(
+    controls = NA,
+    htmltools::tags$source(
+      src = file,
+      type = glue::glue("audio/{type}", type = type)
+    )
+  )
+}
+
+html_tag_audio("https://p.scdn.co/mp3-preview/e53854d85f8c28c18371ec7b83fb2629ffb40f4a?cid=eee6ebfdc46d47ca8a550d4ca3a6b107", type = "mpeg")
+
+```
+
+_A snippet of Charli XCX - Need Ur Luv (Japanese Wallpaper Remix)_
+
+According to Spotify, the tempo of the remix is 216 beats per minute, which should make it quite a fast peace. As seen in the first (non-cycled) tempogram, the different sections of the track lead to different strengths of _tempo octaves_, multiples of the tempo. The parts with stronger percussion are stronger at 108 beats per minute, but it seems like the chimes threw off Spotify's algorithm to pick to tempo for the whole piece. In the second tempogram, all tempi are cycled to be between the most common range of 80-160 beats per minute, resulting in a very clear line at around 108 beats per minute. It's not unfair to assume that the decision for the overall tempo of the piece also influences other metrics, like energy and danceability, which might be "inaccurate" for some pieces, even though only Spotify really knows how those are computed.
+
+### Distribition of danceability / energy __WIP NEW 15/3__
+
+```{r}
+tracks %>%
+  ggplot(aes(x= category, y = danceability)) +
+  geom_violin(fill="skyblue") +
+  scale_y_continuous(breaks=seq(0,1,by=0.20)) +
+  labs(
+    title = 'Distribution of danceability in original and remixed recordings',
+   y = "Danceability",
+   x = element_blank()
+  ) +
+  theme_minimal() + theme(plot.title = element_text(hjust = 0.5), legend.position = "none")
+
+tracks %>%
+  ggplot(aes(x= category, y = energy)) +
+  geom_boxplot(fill="skyblue") +
+  scale_y_continuous(breaks=seq(0,1,by=0.20)) +
+  labs(
+    title = "Distribution of energy in original and remixed recordings",
+   y = "Energy",
+   x = element_blank()
+  ) +
+  theme_minimal() + theme(plot.title = element_text(hjust = 0.5), legend.position = "none")
+```
+
+
+***
+
+Work in progress
+
+### Spotify determines **energy** and **valence** for every song; is there a mood shift in "my remixes"? __Updated 15/3__
+
+
+```{r plot 2}
+
+d <- highlight_key(tracks, ~id)
+
+plot2 <- ggplot(d, aes(x=valence,y=energy,size=tempo,color=remix_name,label=track.name)) +
+geom_point(alpha=0.7, aes(text=sprintf('Track: %s<br>Valence: %s | Energy: %s<br>Tempo: %s BPM', track.name, round(valence, 2), round(energy,2), round(tempo)))) +
+facet_wrap(~category) +
+scale_x_continuous(         # Fine-tune the x axis.
+  limits = c(0, 1),
+  breaks = c(0, 0.50, 1),   # Use grid-lines for quadrants only.
+  minor_breaks = NULL       # Remove 'minor' grid-lines.
+) +
+scale_y_continuous(         # Fine-tune the y axis in the same way.
+  limits = c(0, 1),
+  breaks = c(0, 0.50, 1),
+  minor_breaks = NULL
+) +
+labs(
+  title = "Energy, valence and tempo per category",
+  y = "Energy",
+  x = "Valence",
+  size = "Tempo (BPM)"
+) +
+theme_minimal() + theme(legend.position = "none", plot.title = element_text(hjust = 0.5))
+
+ggplot2 <- ggplotly(plot2, tooltip = c("groups","text"))
+
+ggplot2 <- ggplot2 %>% layout(dragmode='zoom')
+
+partial_bundle(highlight( ggplot2, on = "plotly_hover", off = "plotly_doubleclick"))
+```
+
+***
+
+This graphic shows the [Spotify API](https://developer.spotify.com/documentation/web-api/reference/#object-audiofeaturesobject)-determined energy and valence for all tracks in the corpus. Most original recordings in the corpus were already quite high in both energy, with almost all tracks being in the upper half.
+Looking at Russell's circumplex model of affect, almost all tracks, whether remix or original, are in the happy or anxious quadrants.
+
+
+![](https://www.researchgate.net/profile/Michalis-Xenos/publication/258273035/figure/fig2/AS:297671244959745@1447981763092/Russells-Circumplex-Model-of-Affect.png)
+
+
+There seems to be a slight shift to the upper-left, indicating the remixes, overall, could be bit more nervous or tense.
+
+When hovering over a point in the graphic, the exact values and song title are shown. The track's counterpart in the other category gets highlighted as well, highlights can be made undone by double-clicking on any blank space in the graphic.
+
+### Re-mix, re-distribution of pitch classes?
 
 ```{r}
 originals_an <-
@@ -321,50 +419,6 @@ Tracks are remixed for a large amount of reasons, an important one being: making
 In the violin plot, which shows the full tempo distribution for both categories, it can be seen that for original recordings, the tempo for most tracks lies between 100-140 bpm, with a peak around 120 bpm. The tempo distribution for their remixed counterparts is far more dense, with a peak just slightly above 120 bpm. Most house music, and thus, remixes that fall into that genre, is around 128 bpm nowadays, which can be significant factor in the overall tempo change.
 
 Tempo alone doesn't define how club-ready a track is, two other important factors are *energy* and *danceability*.
-
-### Spotify determines **energy** and **danceability** for every song; are "my remixes" more club-ready?
-
-
-```{r plot 2}
-
-d <- highlight_key(tracks, ~id)
-
-plot2 <- ggplot(d, aes(x=energy,y=danceability,size=tempo,color=remix_name,label=track.name)) +
-geom_point(alpha=0.7) +
-# geom_rug(size = 0.1) +
-facet_wrap(~category) +
-scale_x_continuous(         # Fine-tune the x axis.
-  limits = c(0, 1),
-  breaks = c(0, 0.50, 1),   # Use grid-lines for quadrants only.
-  minor_breaks = NULL       # Remove 'minor' grid-lines.
-) +
-scale_y_continuous(         # Fine-tune the y axis in the same way.
-  limits = c(0, 1),
-  breaks = c(0, 0.50, 1),
-  minor_breaks = NULL
-) +
-labs(
-  title = "Energy, danceability and tempo per category",
-  y = "Danceability",
-  x = "Energy",
-  size = "Beats per minute"
-) +
-theme_minimal() + theme(legend.position = "none", plot.title = element_text(hjust = 0.5))
-
-ggplot2 <- ggplotly(plot2, tooltip = c("groups","track.name","energy","danceability","tempo") )
-
-ggplot2 <- ggplot2 %>% layout(dragmode='zoom')
-
-partial_bundle(highlight( ggplot2, on = "plotly_hover", off = "plotly_doubleclick"))
-```
-
-***
-
-This graphic shows the [Spotify API](https://developer.spotify.com/documentation/web-api/reference/#object-audiofeaturesobject)-determined energy and danceability for all tracks in the corpus. Most original recordings in the corpus were already quite high in both energy and danceability, with almost all tracks being in the upper right quadrant.
-
-Overall, energy and danceability are somewhat higher among the remixes. Their energy is distributed within the same range as the original, but a shift to the right is apparent. Danceability of the remixes is also distributed within the same range as the original tracks, but less concentrated and there are more tracks with less than 0.5 danceability, with most of those having higher energy than their original mixes.
-
-When hovering over a point in the graphic, the exact values and song title are shown. The track's counterpart in the other category gets highlighted as well, highlights can be made undone by double-clicking on any blank space in the graphic.
 
 ### Big changes in **energy** point towards a remix being really "different" from the original recording
 
