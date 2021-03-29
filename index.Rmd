@@ -631,11 +631,13 @@ In the previous pages, some small, overall differences between the remixes in my
 <img src="forest.png" width="100%"/>
 
 To answer this question a random forest was used to find the most important features. It's visible that the most important features are:
-Instrumentalness
-Timbre coefficient 6
-Duration
-Timbre coefficient 4
-We can use these features for a reduced knn classifier. The duration probably makes it easy to find the extended versions of songs in the playlist.
+
+1. Instrumentalness
+2. Timbre coefficient 6
+3. Duration
+4. Timbre coefficient 4
+
+We can use these features for a reduced knn classifier. The duration probably makes it easy to find the extended versions of songs in the playlist. Some remixes also have a (way) higher instrumentalness score, due to them stripping some vocals of the original. 
 
 On the left, the performance is shown. Out of 160 songs, 50 original recordings were classified correctly, along with 38 remixes. This leaves us with an accuracy of 55%, just slightly better than random chance.
 In conclusion, this probably isn't a useful way to identify a remix. Performance is also influenced by the types of songs that are remixed, which in this case, sometimes, are already dance tracks.
