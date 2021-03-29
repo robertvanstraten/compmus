@@ -45,6 +45,8 @@ library(plotly)
 library(compmus)
 library(gridExtra)
 library(cowplot)
+library(stringr)
+library(DT)
 ```
 
 
@@ -61,12 +63,12 @@ originals <- originals %>% mutate(id = row_number(), remix_name = remixes$remix_
 ```{r combine}
 tracks <-
   bind_rows(
-    originals %>% mutate(category = "Original recordings"),
-    remixes %>% mutate(category = "Remixes")
+    originals %>% mutate(category = "Original recordings", artists_string = str_replace_all(sapply(track.artists, function(x) x[3]), '(c\\()*(["\\)])*', "")),
+    remixes %>% mutate(category = "Remixes", artists_string = str_replace_all(sapply(track.artists, function(x) x[3]), '(c\\()*(["\\)])*', ""))
   )
 ```
 
-### Introduction - Another take: It's the remix!
+### **Introduction**: It's the remix!
 
 The corpus I chose for my Computational Musicology portfolio is a selection of remixes of (pop) songs that I like.
 I've been maintaining a Spotify playlist, that now has around 75 remixed recordings, since last year. I started maintaining this playlist for myself because there are generally a lot of remixes for artists that I follow, but I was unfamiliar with most. They're quite an underappreciated part of an artist's discography. Listening to a lot of remixes and collecting those that I like was an interesting musical journey.
@@ -90,13 +92,17 @@ Since the corpus is my personal playlist, it doesn't fully cover the pop remixes
     * This is almost an entirely different song from the original. It's a lot more techno-adjacent and the structure is completely different.
 2. Kesha - Praying (Frank Walker Remix)
     * This turns an acclaimed ballad into a dancefloor banger, with a good drop and build-ups. It may sound typical, but it feels so different and flips across genres.
+
+***    
     
-<table>
-  <tr>
-    <td><iframe src="https://open.spotify.com/embed/playlist/67znZtLJIfAIdEOgxnRgCL" width="300" height="380" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe></td>
-    <td><iframe src="https://open.spotify.com/embed/playlist/0f4kAOBTCO8aEh1nrITYQL" width="300" height="380" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe></td>
-  </tr>
-</table>
+```{=html}
+<object data="https://open.spotify.com/embed/playlist/67znZtLJIfAIdEOgxnRgCL" width="100%" height="49%">
+    <embed src="https://open.spotify.com/embed/playlist/67znZtLJIfAIdEOgxnRgCL" width="100%" height="49%"></embed>
+</object>
+<object data="https://open.spotify.com/embed/playlist/0f4kAOBTCO8aEh1nrITYQL" width="100%" height="49%">
+    <embed src="https://open.spotify.com/embed/playlist/67znZtLJIfAIdEOgxnRgCL" width="100%" height="49%"></embed>
+</object>
+```
     
 ### A remix can change a lot of aspects of a song, an expected change is the **tempo**
 
@@ -138,37 +144,46 @@ In the violin plot, which shows the full tempo distribution for both categories,
 
 Tempo alone doesn't define how club-ready a track is, two other important factors are *energy* and *danceability*.
 
-### Distribition of danceability / energy __WIP NEW 15/3__
+### Other important factors regarding remixes: **danceability**, **energy**, and **loudness**
 
 ```{r distr}
-tracks %>%
+energy <- tracks %>%
   ggplot(aes(x= category, y = danceability)) +
-  geom_violin(fill="skyblue") +
+  geom_violin(aes(fill=category)) +
   scale_y_continuous(breaks=seq(0,1,by=0.20)) +
   labs(
-    title = 'Distribution of danceability in original and remixed recordings',
    y = "Danceability",
    x = element_blank()
   ) +
-  theme_minimal() + theme(plot.title = element_text(hjust = 0.5), legend.position = "none")
+  theme_minimal() +  theme(legend.position = "none", axis.text=element_text(size=7))
 
-tracks %>%
+danceability <- tracks %>%
   ggplot(aes(x= category, y = energy)) +
-  geom_boxplot(fill="skyblue") +
+  geom_violin(aes(fill=category)) +
   scale_y_continuous(breaks=seq(0,1,by=0.20)) +
   labs(
-    title = "Distribution of energy in original and remixed recordings",
    y = "Energy",
    x = element_blank()
   ) +
-  theme_minimal() + theme(plot.title = element_text(hjust = 0.5), legend.position = "none")
+  theme_minimal() +  theme(legend.position = "none", axis.text=element_text(size=7))
+
+loudness <- tracks %>%
+  ggplot(aes(x= category, y = loudness)) +
+  geom_violin(aes(fill=category)) +
+  labs(
+   y = "Loudness (dB)",
+   x = element_blank()
+  ) +
+  theme_minimal() + theme(legend.position = "none", axis.text=element_text(size=7))
+
+grid.arrange(energy,danceability,loudness, top = "Distribution of danceability, energy and loudness", nrow=1)
 ```
 
 ***
 
 WIP
 
-### Big changes in **energy** point towards a remix being really "different" from the original recording
+### Big changes in **energy** point towards a remix being really different from the original
 
 ```{r calculate energy differences}
 absdiff <- function(x) abs(diff(c(x, 0)[1:2]))
@@ -229,26 +244,28 @@ coord_cartesian(xlim = c(0, 1))
 
 Energy is an important factor, and listening to the remixes with a lot of change in the assigned energy value confirmed that. Seems that in most cases, remix with a (big) change in energy are actually very different songs.
 
-So, what about the remixes with the smallest change in energy?
+### And what about the smallest differences in energy?
 
+```{r table least different}
+least_different <- tracks %>% filter(category=="Remixes") %>% arrange(energy_absdiff)
 
-```{r table least different, echo=FALSE}
-least_different <- tracks %>% filter(category=="Remixes") %>% top_n(-10, energy_absdiff) %>% arrange(energy_absdiff)
-
-kable(least_different[,c("track.name","energy","energy_diff", "duration_diff")], caption = "Top 10 remixes with least change in energy, with duration change", floating.environment="sidewaystable", col.names = c("Remix", "Energy", "Change in energy from original", "Change in duration (seconds)"))
+datatable(least_different[,c("artists_string", "track.name","energy","energy_diff", "energy_absdiff", "duration_diff")], caption = "Remixes ordered by least change in energy, with duration change", colnames = c("Artist(s)", "Remix", "Energy", "Change in energy from original", "Absolute energy difference", "Change in duration (seconds)"), options = list(
+  rowCallback = JS()
+), callback = JS("table.order([5, 'asc']).draw();")) %>% formatRound(columns = c(3:5), digits =  3)
 ```
+
+***
 
 These remixes don't feel that different from the original. Half of the songs on this list are mostly remixed that are just extended versions of the original song, namely Circus, Flames, Better When You're Gone, Don't Start Now, and Toxic. It makes sense that an extended version of a song is not drastically different from the original. Also interesting is that Mura Masa has a track in both the top 10 biggest and top 10 smallest changes in energy.
 
-### Spotify determines **energy** and **valence** for every song; is there a mood shift in "my remixes"? __Updated 15/3__
-
+### Emotional valance and arousal; do remixes shift the **mood** of a song?
 
 ```{r plot 2}
 
 d <- highlight_key(tracks, ~id)
 
 plot2 <- ggplot(d, aes(x=valence,y=energy,size=tempo,color=remix_name,label=track.name)) +
-geom_point(alpha=0.7, aes(text=sprintf('Track: %s<br>Valence: %s | Energy: %s<br>Tempo: %s BPM', track.name, round(valence, 2), round(energy,2), round(tempo)))) +
+geom_point(alpha=0.7, aes(text=sprintf('Artist(s): %s<br>Track: %s<br>Valence: %s | Energy: %s<br>Tempo: %s BPM', artists_string, track.name, round(valence, 2), round(energy,2), round(tempo)))) +
 geom_text(                  # Add outlier labels
     aes(
       x = valence,
@@ -337,11 +354,11 @@ partial_bundle(highlight( ggplot2, on = "plotly_hover", off = "plotly_doubleclic
 This graphic shows the [Spotify API](https://developer.spotify.com/documentation/web-api/reference/#object-audiofeaturesobject)-determined energy and valence for all tracks in the corpus. Most original recordings in the corpus were already quite high in both energy, with almost all tracks being in the upper half.
 Looking at Russell's circumplex model of affect, almost all tracks, whether remix or original, are in the upper quadrants.
 
-There seems to be a slight shift to the upper-left, indicating the remixes, overall should be more nervous.
+There seems to be a slight shift to the upper-left, indicating the remixes, overall should be more nervous-feeling.
 
 When hovering over a point in the graphic, the exact values and song title are shown. The track's counterpart in the other category gets highlighted as well, highlights can be made undone by double-clicking on any blank space in the graphic.
 
-### _The *need* for a tempo, even when it's not always *that* accurate_
+### The *need* for a **tempo**, even when it's not always accurate
 
 ```{r needurluv}
 needurluv <- get_tidy_audio_analysis("1x96SvT97nQgfdgEkUiSv9")
@@ -397,7 +414,7 @@ _A snippet of Charli XCX - Need Ur Luv (Japanese Wallpaper Remix)_
 
 According to Spotify, the tempo of the remix is 216 beats per minute, which should make it quite a fast peace. As seen in the first tempogram, the different sections of the track lead to different strengths of _tempo octaves_, multiples of the tempo. The parts with stronger percussion are stronger at 108 beats per minute, but it seems like the chimes threw off Spotify's algorithm to pick to tempo for the whole piece. In the second tempogram, all tempi are cycled to be between the most common range of 80-160 beats per minute, resulting in a very clear line at around 108 beats per minute. It's not unfair to assume that the decision for the overall tempo of the piece also influences other metrics, like energy and danceability, which might be "inaccurate" for some pieces, even though only Spotify really knows how those are computed exactly.
 
-### _Gonna be you, and me / It's gonna be everything_, restructured by Flume
+### _Gonna be you, and me / It's gonna be everything_, **restructured** by Flume
 
 ```{r ssm info, cache=TRUE}
 
@@ -534,7 +551,7 @@ In the original recording, both self-similarity matrices show horizontal and ver
 
 The Flume remix is not only different in energy, there's a completely different structure as well. The verses are completely gone, and only a part of the chorus (and the part just before) is used, a newcomer is the two *drop*s the song now has. The chroma-based matrix shows a lot of parallel lines, which means there's a big similarity in a later part in the song. But mostly, this matrix shows there's similarity between the drop (the large dark blue squares) and non-drop parts. The timbre-based matrix more clearly shows the (mostly just musical) parts after the drops, and the verses before the the drop are somewhat visible, due to the actual drop parts being darker.
 
-### Do remixes have a different timbre?
+### Dance, dance, dance: do remixes have a different **timbre**?
 
 ```{r red, cache=TRUE}
 originals_an <-
@@ -549,7 +566,6 @@ tracks_an <-
   originals_an %>%
   bind_rows(remixes_an)
 ```
-
 
 ```{r red2, cache=TRUE}
 tracks_an %>%
@@ -574,7 +590,7 @@ tracks_an %>%
 
 The Spotify low-level track analysis for each track holds information for each segment (a very small part, mostly less than 1 second, depending on the track), including chroma and timbre. Every segment has a chroma vector, which shows the fraction of 'energy' for the segment in each pitch class. From all segments, a mean for each song can be calculated. As seen here, when those means are visualized with a violin plot, the distribution of pitch class energy isn't all that different between the original recordings and remixes. Both have outliers in almost every pitch class, but a clear difference or trend isn't apparent.
 
-### Classy 
+### Can a song easily be **classified** as a remix based on Spotify's features?
 
 ![](conf.png) 
 
@@ -582,4 +598,4 @@ The Spotify low-level track analysis for each track holds information for each s
 
 test
 
-### Conclu
+### Conclusion
