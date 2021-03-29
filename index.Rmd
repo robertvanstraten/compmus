@@ -648,7 +648,7 @@ Taking a look at lower-level features and the visualisations of those, like the 
 
 Beforehand, I already knew _why_ I added remixes to my remix playlist. I wanted longer versions of songs I knew or nice dance versions of songs. The data confirmed that my remixes on average are longer (which the playlist length also already shows beautifully) and that they're a bit more energetic and danceable. But it also showed things that I didn't know, but make sense. For example, how the remixes are slightly more "nervous"-feeling. Now it makes sense why I listen to it mostly while working on assignments.
 
-This playlist started as a passion project during the first lockdown, and it's funny to see how it became my university project during another lockdown. I hope to enjoy some of the remixes in a club when that's possible again. MEROL beautifully expressed this sentiment in "knaldrang", so I'll live you with that.
+This playlist started as a passion project during the first lockdown, and it's funny to see how it became my university project where I got to use techniques I already knew in (web) programming and even learned an entirely new language during another lockdown. I hope to enjoy some of the remixes in a club when that's possible again. MEROL beautifully expressed this sentiment in "knaldrang", so I'll live you with that.
 
  ```{=html}
 <object data="https://open.spotify.com/embed/track/0ekV6d6sL5dtjhsMUG6kTT" width="300" height="380">
