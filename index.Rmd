@@ -227,9 +227,9 @@ duration_difference <- full_join(originals, tracks) %>%
 duration_difference <- duration_difference %>%
   rename(duration_diff = track.duration_ms)
 
-tracks <- merge(tracks, energy_absdifference, by="id")
-tracks <- merge(tracks, energy_difference, by="id")
-tracks <- merge(tracks, duration_difference, by="id")
+tracks <- inner_join(tracks, energy_absdifference)
+tracks <- inner_join(tracks, energy_difference)
+tracks <- inner_join(tracks, duration_difference)
 ```
 
 ```{r plot 3 differences}
