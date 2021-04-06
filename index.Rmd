@@ -271,7 +271,7 @@ Interesting enough: Flume and Disclosure both have a track of theirs remixed and
 ```{r table least different}
 least_different <- tracks %>% filter(category=="Remixes") %>% arrange(energy_absdiff)
 
-datatable(least_different[,c("artists_string", "track.name","energy","energy_diff", "energy_absdiff", "duration_diff")], caption = "Remixes ordered by least change in energy, with duration change", colnames = c("Artist(s)", "Remix", "Energy", "Change in energy from original", "Absolute energy difference", "Change in duration (seconds)"), options = list(
+datatable(least_different[,c("artists_string", "track.name","energy","energy_diff", "energy_absdiff", "duration_diff")], caption = "Remixes ordered by least change in energy, with duration change", colnames = c("Artist(s)", "Remix", "Energy", "Change in energy from original", "Absolute energy difference", "Change in duration (seconds)"), options = list(scrollY="100%",scrollCollapse=TRUE,paging=FALSE,
   rowCallback = JS(),
 lengthChange = FALSE), callback = JS("table.order([5, 'asc']).draw();")) %>% formatRound(columns = c(3:5), digits =  3) %>% formatRound(columns = c(6), digits =  0)
 ```
